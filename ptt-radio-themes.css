@@ -1,0 +1,48 @@
+/* PTT-RADIO radio-thema's. De originele PTT Direct/React/audiofuncties blijven ongemoeid. */
+:root { --pttr-accent: #4aea8b; --pttr-glow: #f34f6b; --pttr-image: url('/ptt-radio-assets/kerst.jpg'); }
+body[data-ptt-radio-theme="winter"] { --pttr-accent:#79e5ff; --pttr-glow:#32a9ff; --pttr-image: url('/ptt-radio-assets/winter.jpg'); }
+body[data-ptt-radio-theme="zomer"] { --pttr-accent:#ffca60; --pttr-glow:#ff8c32; --pttr-image: url('/ptt-radio-assets/zomer.jpg'); }
+body[data-ptt-radio-theme="space"] { --pttr-accent:#65baff; --pttr-glow:#a87cff; --pttr-image: url('/ptt-radio-assets/space.jpg'); }
+body.ptt-radio-theme-enabled { display:flex !important; flex-direction:column; margin:0; height:100vh; overflow:hidden; background:#040a15; font-family:'Segoe UI',Tahoma,sans-serif; }
+body.ptt-radio-theme-enabled > #root { flex:1 1 auto; min-height:0; min-width:0; width:100%; transition:padding-right .2s ease; }
+body.ptt-radio-theme-enabled #root > .ts-app { height:100% !important; width:100%; --accent:var(--pttr-accent); --bg:#071425; --bg-toolbar-1:#102036; --bg-toolbar-2:#0b1729; --border:#29425c; --border-soft:#1a354e; --text:#edf6ff; --text-muted:#a0bed2; --input-bg:#12263b; --input-text:#fff; --button-bg-1:#213b54; --button-bg-2:#12263b; --button-bg-hover-1:#2c5872; --button-bg-hover-2:#1e3d58; --row-hover:#17434c; --client-text:#e6f4ff; --self-text:var(--pttr-accent); --log-bg:#081426; --log-text:#d2e7f5; color-scheme: dark; }
+body.ptt-radio-picker-open > #root { padding-right:282px; box-sizing:border-box; }
+#ptt-radio-header { height:182px; flex:0 0 182px; position:relative; isolation:isolate; overflow:hidden; color:white; display:flex; align-items:center; padding:10px 315px 10px 36px; gap:22px; border-bottom:2px solid var(--pttr-accent); background:radial-gradient(circle at 20% 40%,#203854,#050b18 65%); box-shadow:0 5px 25px #0009; }
+#ptt-radio-header:before { content:""; position:absolute; inset:0; z-index:-2; background-image:linear-gradient(90deg,transparent 0%,#02081555 36%,#040a17 72%),var(--pttr-image); background-size:100% 100%,auto 330px; background-repeat:no-repeat; background-position:center,left center; opacity:.94; }
+#ptt-radio-header:after { content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(0deg,#020816bf,transparent 45%); }
+.ptt-radio-scene { height:115px; flex:0 0 clamp(100px,18vw,290px); border-radius:18px; border:1px solid #9ed9ff6b; background-image:linear-gradient(90deg,#0000,#040c20bb),var(--pttr-image); background-position:center,left center; background-size:cover; box-shadow:inset 0 0 26px #040a19,0 0 20px #0008; }
+.ptt-radio-brand { min-width:0; z-index:1; text-shadow:0 3px 16px #000,0 1px 5px #000; }
+.ptt-radio-brand-small { color:var(--pttr-accent); font-size:11px; font-weight:800; letter-spacing:3px; }
+.ptt-radio-brand-title { font-size:clamp(25px,3.1vw,54px); line-height:1.1; font-weight:900; letter-spacing:1.5px; white-space:nowrap; }
+.ptt-radio-brand-title em { font-style:italic; color:var(--pttr-accent); text-shadow:0 0 22px var(--pttr-glow),0 2px 9px #000; }
+.ptt-radio-brand-note { color:#e1ebf6; margin-top:9px; font-size:13px; }
+.ptt-radio-chrome { border:1px solid #ffffff2b; padding:13px; margin-left:auto; white-space:nowrap; border-radius:14px; background:#060d20ba; font-size:13px; font-weight:700; }
+.ptt-radio-led { width:11px; height:11px; display:inline-block; border-radius:50%; margin-right:6px; background:var(--pttr-accent); box-shadow:0 0 16px var(--pttr-accent); }
+.ptt-radio-meter { display:flex; align-items:end; gap:4px; height:35px; padding-top:8px; }
+.ptt-radio-meter i { width:9px; height:calc(8px + var(--h,12px)); background:var(--pttr-accent); border-radius:2px; box-shadow:0 0 7px var(--pttr-accent); }
+.ptt-radio-meter i:nth-child(2) { --h:5px; } .ptt-radio-meter i:nth-child(3) { --h:13px; } .ptt-radio-meter i:nth-child(4) { --h:20px; } .ptt-radio-meter i:nth-child(5) { --h:15px; } .ptt-radio-meter i:nth-child(6) { --h:24px; } .ptt-radio-meter i:nth-child(7) { --h:10px; } .ptt-radio-meter i:nth-child(8) { --h:17px; }
+#ptt-radio-toggle { position:absolute; right:15px; top:14px; border:1px solid var(--pttr-accent); border-radius:13px; background:#071d30d9; padding:12px 15px; color:white; font:700 14px 'Segoe UI',sans-serif; cursor:pointer; box-shadow:0 0 15px #0006; z-index:4; }
+#ptt-radio-toggle:hover,#ptt-radio-toggle:focus-visible { background:#1c3853; outline:2px solid var(--pttr-accent); }
+#ptt-radio-panel { box-sizing:border-box; position:fixed; right:0; top:0; bottom:0; width:282px; padding:16px 12px; display:flex; flex-direction:column; gap:13px; z-index:9997; overflow-y:auto; color:white; background:linear-gradient(180deg,#071a31,#030914); box-shadow:-4px 0 20px #000b; border-left:2px solid var(--pttr-accent); }
+#ptt-radio-panel[hidden] { display:none !important; }
+.ptt-radio-panel-head { display:flex; justify-content:space-between; align-items:center; font-weight:900; font-size:21px; color:#e5f5ff; padding:6px 2px 12px; border-bottom:1px solid #2d6581; }
+#ptt-radio-close { cursor:pointer; border:1px solid #31526d; border-radius:9px; padding:4px 10px; background:#132940; color:#e9f4ff; font-size:21px; }
+#ptt-radio-options { display:grid; gap:10px; }
+.ptt-radio-choice { width:100%; border:1px solid #245879; border-radius:18px; display:flex; align-items:center; gap:8px; text-align:left; color:#fff; background:linear-gradient(160deg,#0d273e,#061323); padding:7px; cursor:pointer; min-height:79px; box-sizing:border-box; }
+.ptt-radio-choice:hover,.ptt-radio-choice:focus-visible { border-color:var(--pttr-accent); outline:0; box-shadow:0 0 9px #6bcfff66; }
+.ptt-radio-choice.is-selected { border-color:#77f96b; box-shadow:inset 0 0 3px #77ff77,0 0 13px #3cff6990; }
+.ptt-radio-choice img { width:86px; height:65px; border-radius:9px; object-fit:cover; flex:none; }
+.ptt-radio-choice-text { display:grid; flex:1 1 auto; min-width:0; gap:4px; }
+.ptt-radio-choice-text strong { font-size:12px; }
+.ptt-radio-choice-text small { font-size:10px; color:#9bb9d3; line-height:1.3; }
+.ptt-radio-ring { flex:none; width:16px; height:16px; border:2px solid #94a2b6; border-radius:50%; }
+.is-selected .ptt-radio-ring { border-color:#7eff7c; background:#6bff6b; box-shadow:0 0 12px #6aff6a; }
+#ptt-radio-apply { cursor:pointer; border:1px solid #75ff54; border-radius:14px; color:white; background:linear-gradient(#25c82f,#04640e); padding:15px; font-size:15px; font-weight:900; box-shadow:0 0 17px #12ba2675; }
+#ptt-radio-apply:hover { filter:brightness(1.2); }
+.ptt-radio-panel-hint { color:#9fc1d1; font-size:11px; line-height:1.5; text-align:center; }
+body[data-ptt-radio-theme="winter"] #ptt-radio-header { border-bottom-color:#78e9ff; }
+body[data-ptt-radio-theme="zomer"] #ptt-radio-header { border-bottom-color:#ffbf54; }
+body[data-ptt-radio-theme="space"] #ptt-radio-header { border-bottom-color:#8a8fff; }
+@media(max-height:820px) { #ptt-radio-header { height:122px; flex-basis:122px; padding:8px 290px 8px 18px; } .ptt-radio-scene { height:85px; flex-basis:160px; } .ptt-radio-chrome { display:none; } }
+@media(max-width:1250px) { body.ptt-radio-picker-open > #root { padding-right:0; } #ptt-radio-panel { width:min(300px,85vw); } #ptt-radio-header { padding-right:160px; } .ptt-radio-chrome { display:none; } }
+@media(max-width:700px) { #ptt-radio-header { height:95px; flex-basis:95px; padding:8px 130px 8px 12px; } .ptt-radio-scene { display:none; } .ptt-radio-brand-title { font-size:26px; } .ptt-radio-brand-note { display:none; } #ptt-radio-toggle { right:5px; top:16px; padding:8px; font-size:11px; } }
