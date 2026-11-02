@@ -1,0 +1,211 @@
+
+name: Bouw PTT Direct Windows 0.6.3 - Herstel venstertitel
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/build-windows.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: PTT Direct Windows 64-bit
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      WEBSPEAK3_COMMIT: c2b52b323d2ef10e388b2b600444a98390c5cc7a
+      CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+    steps:
+      - name: Project ophalen
+        uses: actions/checkout@v4
+
+      - name: Bewezen reparaties van 0.6.2 ophalen
+        uses: actions/checkout@v4
+        with:
+          repository: michiel66/PTT-TS-NL
+          ref: f3b95e3921289bb826db7a87fc318300d602e992
+          path: version-062
+
+      - name: Werkende PTT Direct 0.6.1 ophalen
+        uses: actions/checkout@v4
+        with:
+          repository: michiel66/PTT-TS-NL
+          ref: 75b759e0413641a56fefc593f2cd8d97336b06ee
+          path: green-061
+
+      - name: Eerder groen gebouwde Android-weergave ophalen
+        uses: actions/checkout@v4
+        with:
+          repository: michiel66/PTT-TS-NL
+          ref: 0f0c7cd2416c2a8492dc8f457bc8c629134c4eb1
+          path: known-good
+
+      - name: Bewezen versie 0.6.0 ophalen
+        uses: actions/checkout@v4
+        with:
+          repository: michiel66/PTT-TS-NL
+          ref: 77881f1f8f5e23fb9b4b968a7a02860a954bfceb
+          path: green-060
+
+      - name: Groen gebouwde versie 0.5.1 ophalen
+        uses: actions/checkout@v4
+        with:
+          repository: michiel66/PTT-TS-NL
+          ref: 3a10277167685c326fc55b797732bd28cfffde69
+          path: green-051
+
+      - name: Werkende TeamSpeak Windows basis ophalen
+        uses: actions/checkout@v4
+        with:
+          repository: michiel66/PTTConnect-PC
+          ref: 8ed94f98dae6cfce47e90116fe58b2f4392a6919
+          path: pttbase
+
+      - name: Nederlandse Android aanpassingen ophalen
+        uses: actions/checkout@v4
+        with:
+          repository: michiel66/TS6-Droid-NL
+          path: android-nl
+
+      - name: Originele Android broncode ophalen
+        uses: actions/checkout@v4
+        with:
+          repository: YUAXI/TS6_Droid_CN
+          ref: 56d3b4d1991a4c565b1f75f419f4563e772f9614
+          path: android-source
+
+      - name: Node installeren
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Python installeren
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Rust installeren
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: TeamSpeak engine ophalen
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --recurse-submodules https://github.com/Moepchi/webspeak3.git upstream
+          cd upstream
+          git checkout "$WEBSPEAK3_COMMIT"
+          git submodule update --init --recursive
+
+      - name: Werkende TeamSpeak en PTT functies toepassen
+        shell: bash
+        run: |
+          set -euo pipefail
+          python pttbase/windows/patch_webspeak3.py
+
+      - name: PTT Direct herstellen met bewezen bouwstappen en gecorrigeerde Windows titel
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('version-062/.github/workflows/build-windows.yml').read_text(encoding='utf-8')
+          steps = [
+              'Groene interface 0.6.1 volledig terugzetten',
+              'PTT Direct 0.6.2 verbeteringen toevoegen',
+          ]
+
+          def load_python_step(name):
+              marker = f'      - name: {name}\n        shell: bash\n        run: |\n'
+              if source.count(marker) != 1:
+                  raise RuntimeError(f'Bouwstap ontbreekt: {name}')
+              block = source.split(marker, 1)[1].split('\n      - name:', 1)[0]
+              lines = [line[10:] if line.startswith('          ') else line for line in block.splitlines()]
+              start = lines.index("python - <<'PY'") + 1
+              end = len(lines) - 1 - lines[::-1].index('PY')
+              return '\n'.join(lines[start:end]) + '\n'
+
+          for name in steps:
+              code = load_python_step(name)
+              if name == steps[1]:
+                  fixes = [
+                      ('''if main.count('"PTT Connect"') < 1:''',
+                       '''if main.count('"PTT-TS-NL"') < 1:'''),
+                      ('''main = main.replace('"PTT Connect"', '"PTT Direct"')''',
+                       '''main = main.replace('"PTT-TS-NL"', '"PTT Direct"')'''),
+                      ("pkg['version'] = '0.6.2'", "pkg['version'] = '0.6.3'"),
+                  ]
+                  for old, new in fixes:
+                      if code.count(old) != 1:
+                          raise RuntimeError(f'Herstelanker ontbreekt: {old}')
+                      code = code.replace(old, new, 1)
+              print(f'Uitvoeren: {name}', flush=True)
+              exec(compile(code, name, 'exec'), {'__name__': '__main__'})
+
+          main = Path('windows/main.cjs').read_text(encoding='utf-8')
+          assert '"PTT Direct"' in main, 'Windows venstertitel niet aangepast'
+          print('Versie 0.6.3: Multicolor, PTT, TG favorieten en de Windows titel klaar')
+          PY
+
+      - name: TeamSpeak connector bouwen
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd upstream/connector
+          cargo build --release
+
+      - name: TeamSpeak gateway bouwen
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd upstream/gateway
+          npm ci
+          npm run build
+          npm prune --omit=dev
+
+      - name: Windows interface en TypeScript bouwen
+        shell: bash
+        env:
+          VITE_DONATE_URL: ""
+        run: |
+          set -euo pipefail
+          cd upstream/web
+          npm ci
+          npm run build
+
+      - name: TeamSpeak onderdelen bundelen
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p windows/runtime/web
+          mkdir -p windows/runtime/gateway
+          mkdir -p windows/runtime/connector
+          cp -R upstream/web/dist/. windows/runtime/web/
+          cp -R upstream/gateway/dist windows/runtime/gateway/dist
+          cp -R upstream/gateway/node_modules windows/runtime/gateway/node_modules
+          cp upstream/connector/target/release/ts-connector.exe windows/runtime/connector/ts-connector.exe
+          cp upstream/LICENSE windows/runtime/LICENSE-WebSpeak3.txt
+          cp android-source/LICENSE windows/runtime/LICENSE-TS6-Droid-GPLv3.txt
+          test -s windows/runtime/connector/ts-connector.exe
+          node --check windows/main.cjs
+
+      - name: Windows EXE en installer bouwen
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd windows
+          npm install --no-audit --no-fund
+          npm run dist
+
+      - name: Windows EXE beschikbaar maken
+        uses: actions/upload-artifact@v4
+        with:
+          name: PTT-Direct-Windows-64bit
+          path: windows/dist/*.exe
+          if-no-files-found: error
+          retention-days: 30
