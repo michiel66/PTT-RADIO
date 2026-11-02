@@ -1,27 +1,34 @@
 
-name: Bouw PTT Direct Windows 0.6.3 - Herstel venstertitel
+name: PTT RADIO - Windows met vier thema's
 
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
-      - ".github/workflows/build-windows.yml"
+      - '.github/workflows/build-windows.yml'
+      - 'install_radio_themes.py'
+      - 'ptt-radio-themes.js'
+      - 'ptt-radio-themes.css'
+      - 'theme_assets/**'
 
 permissions:
   contents: read
 
 jobs:
   build-windows:
-    name: PTT Direct Windows 64-bit
+    name: PTT RADIO Windows 64-bit
     runs-on: windows-latest
     timeout-minutes: 90
+
     env:
       WEBSPEAK3_COMMIT: c2b52b323d2ef10e388b2b600444a98390c5cc7a
-      CMAKE_POLICY_VERSION_MINIMUM: "3.5"
-      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      CMAKE_POLICY_VERSION_MINIMUM: '3.5'
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
     steps:
-      - name: Project ophalen
+
+      - name: PTT RADIO ophalen
         uses: actions/checkout@v4
 
       - name: Bewezen reparaties van 0.6.2 ophalen
@@ -59,7 +66,7 @@ jobs:
           ref: 3a10277167685c326fc55b797732bd28cfffde69
           path: green-051
 
-      - name: Werkende TeamSpeak Windows basis ophalen
+      - name: Werkende Windows basis ophalen
         uses: actions/checkout@v4
         with:
           repository: michiel66/PTTConnect-PC
@@ -82,17 +89,17 @@ jobs:
       - name: Node installeren
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: '22'
 
       - name: Python installeren
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
 
       - name: Rust installeren
         uses: dtolnay/rust-toolchain@stable
 
-      - name: TeamSpeak engine ophalen
+      - name: Werkende radio-connector ophalen
         shell: bash
         run: |
           set -euo pipefail
@@ -101,13 +108,13 @@ jobs:
           git checkout "$WEBSPEAK3_COMMIT"
           git submodule update --init --recursive
 
-      - name: Werkende TeamSpeak en PTT functies toepassen
+      - name: Werkende PTT functies toepassen
         shell: bash
         run: |
           set -euo pipefail
           python pttbase/windows/patch_webspeak3.py
 
-      - name: PTT Direct herstellen met bewezen bouwstappen en gecorrigeerde Windows titel
+      - name: PTT Direct basis herstellen met de bewezen versies 0.6.1 en 0.6.2
         shell: bash
         run: |
           set -euo pipefail
@@ -149,17 +156,51 @@ jobs:
 
           main = Path('windows/main.cjs').read_text(encoding='utf-8')
           assert '"PTT Direct"' in main, 'Windows venstertitel niet aangepast'
-          print('Versie 0.6.3: Multicolor, PTT, TG favorieten en de Windows titel klaar')
+          print('PTT Direct audio/PTT basis intact')
           PY
 
-      - name: TeamSpeak connector bouwen
+      - name: PTT RADIO naam instellen zonder audio te veranderen
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          package = Path('windows/package.json')
+          obj = json.loads(package.read_text(encoding='utf-8'))
+
+          obj['name'] = 'ptt-radio-windows'
+          obj['version'] = '1.0.0'
+          obj['build']['appId'] = 'nl.pttradio.windows'
+          obj['build']['productName'] = 'PTT RADIO'
+          obj['build']['win']['artifactName'] = 'PTT-RADIO-${version}-${arch}.${ext}'
+
+          if 'nsis' in obj['build']:
+              obj['build']['nsis']['shortcutName'] = 'PTT RADIO'
+
+          package.write_text(
+              json.dumps(obj, indent=2, ensure_ascii=False) + '\n',
+              encoding='utf-8'
+          )
+
+          main = Path('windows/main.cjs')
+          content = main.read_text(encoding='utf-8')
+          content = content.replace('"PTT Direct"', '"PTT RADIO"')
+          main.write_text(content, encoding='utf-8')
+
+          print('PTT RADIO heeft een eigen app-ID')
+          print('De originele PTT Direct installatie blijft behouden')
+          PY
+
+      - name: Radio-connector bouwen
         shell: bash
         run: |
           set -euo pipefail
           cd upstream/connector
           cargo build --release
 
-      - name: TeamSpeak gateway bouwen
+      - name: Radio-gateway bouwen
         shell: bash
         run: |
           set -euo pipefail
@@ -168,44 +209,67 @@ jobs:
           npm run build
           npm prune --omit=dev
 
-      - name: Windows interface en TypeScript bouwen
+      - name: Windows interface bouwen
         shell: bash
         env:
-          VITE_DONATE_URL: ""
+          VITE_DONATE_URL: ''
         run: |
           set -euo pipefail
           cd upstream/web
           npm ci
           npm run build
 
-      - name: TeamSpeak onderdelen bundelen
+      - name: Kerst Winter Zomer en Space toevoegen zonder radiofuncties te veranderen
         shell: bash
         run: |
           set -euo pipefail
+
+          node --check ptt-radio-themes.js
+          python install_radio_themes.py
+
+          test -s upstream/web/dist/ptt-radio-themes.js
+          test -s upstream/web/dist/ptt-radio-themes.css
+
+          test -s upstream/web/dist/ptt-radio-assets/kerst.jpg
+          test -s upstream/web/dist/ptt-radio-assets/winter.jpg
+          test -s upstream/web/dist/ptt-radio-assets/zomer.jpg
+          test -s upstream/web/dist/ptt-radio-assets/space.jpg
+
+      - name: Werkende radio gateway en thema-interface bundelen
+        shell: bash
+        run: |
+          set -euo pipefail
+
           mkdir -p windows/runtime/web
           mkdir -p windows/runtime/gateway
           mkdir -p windows/runtime/connector
+
           cp -R upstream/web/dist/. windows/runtime/web/
           cp -R upstream/gateway/dist windows/runtime/gateway/dist
           cp -R upstream/gateway/node_modules windows/runtime/gateway/node_modules
+
           cp upstream/connector/target/release/ts-connector.exe windows/runtime/connector/ts-connector.exe
+
           cp upstream/LICENSE windows/runtime/LICENSE-WebSpeak3.txt
           cp android-source/LICENSE windows/runtime/LICENSE-TS6-Droid-GPLv3.txt
+
           test -s windows/runtime/connector/ts-connector.exe
           node --check windows/main.cjs
+          test -s windows/runtime/web/ptt-radio-themes.js
 
-      - name: Windows EXE en installer bouwen
+      - name: Windows installer en losse EXE bouwen
         shell: bash
         run: |
           set -euo pipefail
+
           cd windows
           npm install --no-audit --no-fund
           npm run dist
 
-      - name: Windows EXE beschikbaar maken
+      - name: PTT RADIO Windows EXE aanbieden
         uses: actions/upload-artifact@v4
         with:
-          name: PTT-Direct-Windows-64bit
+          name: PTT-RADIO-Themas-Windows
           path: windows/dist/*.exe
           if-no-files-found: error
           retention-days: 30
